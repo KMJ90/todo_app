@@ -1,0 +1,10 @@
+INSERT INTO categories (id, name) VALUES (1, '일');
+INSERT INTO categories (id, name) VALUES (2, '개인');
+INSERT INTO categories (id, name) VALUES (3, '쇼핑');
+INSERT INTO categories (id, name) VALUES (4, '운동');
+INSERT INTO categories (id, name) VALUES (5, '심부름');
+INSERT INTO categories (id, name) VALUES (6, '금융');
+INSERT INTO categories (id, name) VALUES (7, '여행');
+INSERT INTO categories (id, name) VALUES (8, '집안일');
+INSERT INTO categories (id, name) VALUES (9, '학습');
+INSERT INTO categories (id, name) VALUES (10, '기타');
