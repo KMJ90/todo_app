@@ -26,21 +26,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // HTTP 요청마다 실행 : JWT 토큰 검증 및 인증 처리
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        // 요청에서 JWT 토큰 추출
-        String token = resolveToken(request);
+
+        String requestPath = request.getServletPath();
+
+        // 인증이 필요 없는 경로를 필터링
+        if (requestPath.startsWith("/users/") &&
+            (requestPath.endsWith("login") || requestPath.endsWith("register"))) {
+            chain.doFilter(request, response);
+            return;
+        }
 
         // 토큰이 유효하면 사용자 정보 로드 및 인증 객체 설정
-        if (token != null && jwtProvider.validateToken(token)) {
-            // 토큰에서 사용자 ID 추출
-            int userId = jwtProvider.getUserIdFromToken(token);
+        String token = resolveToken(request);
 
-            // 사용자 ID로 UserDetails 조회
-            UserDetails userDetails = userDetailsService.loadUserByUsername(String.valueOf(userId));
+        if (token != null) {
+            if (jwtProvider.validateToken(token)) {
+                logger.info("토큰이 유효합니다.");
+                // 토큰에서 사용자 ID 추출
+                int userId = jwtProvider.getUserIdFromToken(token);
+                // 사용자 ID로 UserDetails 조회
+                UserDetails userDetails = userDetailsService.loadUserByUsername(String.valueOf(userId));
 
-            if (userDetails != null) {
-                // 인증 객체 생성 및 SecurityContext 에 설정
-                var authentication = jwtProvider.getAuthentication (token, userDetails);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (userDetails != null) {
+                    // 인증 객체 생성 및 SecurityContext 에 설정
+                    var authentication = jwtProvider.getAuthentication (token, userDetails);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            } else {
+                logger.warn("Authorization 헤더가 없거나 토큰 형식이 잘못되었습니다.");
             }
         }
         // 다음 필터로 요청 전달
@@ -53,6 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
          if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
              return bearerToken.substring(7); // "Bearer" 접두사를 제거하고 토큰 반환
          }
+         logger.warn("Authorization 헤더가 없거나 형식이 잘못되었습니다.");
          return null; // 토큰이 없으면 null 반환
     }
 }

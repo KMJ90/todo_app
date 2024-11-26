@@ -2,7 +2,6 @@ package com.example.todo_app.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
 
 // 상태 변화 기록
