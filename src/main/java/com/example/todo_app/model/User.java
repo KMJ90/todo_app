@@ -18,9 +18,10 @@ public class User {
     private String username;  // 사용자 이름
 
     @Column(nullable = false)
+    @JsonIgnore
     private String password;  // 비밀번호
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Todo> todos = new ArrayList<>();  // 사용자의 할 일 목록
 
     // RefreshToken 필드

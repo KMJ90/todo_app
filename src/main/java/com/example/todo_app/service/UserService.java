@@ -36,6 +36,7 @@ public class UserService {
     public void registerUser(String username, String password) {
         // 사용자 이름이 이미 존재하는지 확인
         if (userRepository.findByUsername(username).isPresent()) {
+            logger.warn("회원가입 실패: 이미 존재하는 사용자 이름 {}", username);
             throw new IllegalArgumentException("이미 존재하는 사용자 이름입니다.");
         }
         // 새로운 사용자 생성 및 저장
@@ -43,6 +44,7 @@ public class UserService {
         newUser.setUsername(username);
         newUser.setPassword(passwordEncoder.encode(password)); // 비밀번호 암호화
         userRepository.save(newUser);
+        logger.info("회원가입 성공: 사용자 {}", username);
     }
 
     // 로그인 메서드 - 사용자 이름과 비밀번호 검증 후 DTO 반환
@@ -77,6 +79,12 @@ public class UserService {
     public UserDTO getCurrentUser() {
         // SecurityContext 이용해 현재 로그인된 사용자 정보 가져오기
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            logger.warn("현재 사용자 정보 조회 실패: 인증되지 않은 사용자");
+            throw new IllegalArgumentException("인증되지 않은 사용자입니다.");
+        }
+
         String username = authentication.getName(); // 현재 로그인한 사용자의 username
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("현재 사용자를 찾을 수 없습니다."));
@@ -87,7 +95,8 @@ public class UserService {
     public UserDTO convertToDTO(User user) {
         List<TodoDTO> todoDTOs = user.getTodos()
                 .stream()
-                .map(todo -> new TodoDTO(todo.getId(),
+                .map(todo -> new TodoDTO(
+                        todo.getId(),
                         todo.getTitle(),
                         todo.getCompleted(),
                         todo.getDueDate(),
@@ -96,7 +105,8 @@ public class UserService {
                         todo.getTags(),
                         todo.getCreatedAt(),
                         todo.getUpdatedAt(),
-                        todo.getUser().getId()))
+                        todo.getUser() != null ? todo.getUser().getId() : null // NPE 방지
+                ))
                 .collect(Collectors.toList());
         return new UserDTO(user.getId(), user.getUsername(), todoDTOs);
     }

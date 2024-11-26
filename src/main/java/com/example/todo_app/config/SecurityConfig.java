@@ -10,9 +10,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity  // Spring Security 를 활성화하고, 이 클래스가 웹 보안 설정을 위한 것임을 지정
@@ -44,21 +47,22 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             // CSRF(Cross-Site Request Forgery) JWT 사용시 일반적으로 필요 없음
-            .csrf(csrf -> csrf.disable()) // CSRF 비활성화
+            .csrf(AbstractHttpConfigurer::disable) // CSRF 비활성화
 
             // H2 관련 헤더 설정 (개발 환경에서만 허용)
             .headers(headers -> headers
                 // frameOptions: 동일한 출처에서만 페이지 내에서 <iframe>을 사용할 수 있도록 설정. H2 콘솔을 <iframe>으로 열 수 있게 해주는 설정
-                .frameOptions(frameOptions -> frameOptions.sameOrigin()) // H2 콘솔을 위한 프레임 옵션 허용
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin) // H2 콘솔을 위한 프레임 옵션 허용
             )
             // 요청 경로별 접근 권한 설정
-            .authorizeRequests(auth -> auth
-                .requestMatchers("/h2-console/**", "/users/register", "/users/login", "/todos/categories").permitAll() // 이 경로는 인증 없이 접근 가능
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/h2-console/**").permitAll() // 이 경로는 인증 없이 접근 가능
+                .requestMatchers("/users/register", "/users/login", "/todos/categories").permitAll() // 이 경로는 인증 없이 접근 가능
                 .anyRequest().authenticated() // 그 외 요청은 인증 필요
             )
             // JWT 인증 필터 추가
             .addFilterBefore(jwtAuthenticationFilter(),
-                org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class) // 필터 등록
+                UsernamePasswordAuthenticationFilter.class) // 필터 등록
 
             // logout : 로그아웃 관련 설정
             .logout(logout -> logout

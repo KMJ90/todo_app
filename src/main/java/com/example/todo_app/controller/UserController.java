@@ -3,8 +3,8 @@ package com.example.todo_app.controller;
 import com.example.todo_app.dto.LoginRequestDTO;
 import com.example.todo_app.dto.RegisterRequestDTO;
 import com.example.todo_app.dto.UserDTO;
-import com.example.todo_app.model.User;
 import com.example.todo_app.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +25,7 @@ public class UserController {
     // 회원가입 엔드포인트
     // @Valid : User 엔티티를 받을 때, 추가적인 유효성 검증(예: 사용자 이름 및 비밀번호 길이)을 설정하면 좋음
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody RegisterRequestDTO request) {
+    public ResponseEntity<String> registerUser(@Valid @RequestBody RegisterRequestDTO request) {
         try {
             // UserService 를 사용해 회원가입 처리
             userService.registerUser(request.getUsername(), request.getPassword());
