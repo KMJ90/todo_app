@@ -18,16 +18,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // userRepository 를 통해 username 으로 User 엔티티 조회
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
+        try {
+            int id = Integer.parseInt(userId); // String(userId) 을 int 로 변환
+            User user = userRepository.findById(id)
+                    .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + id));
 
-        // CustomUserDetails 객체를 생성할 때 필요한 값 (userId, username, password) 전달
-        return new CustomUserDetails(
-                user.getId(),  // userId
-                user.getUsername(),  // username
-                user.getPassword()  // password
-        );
+            // Spring Security 와 통합하기 위해 CustomUserDetails 객체를 반환
+            // 이는 User 객체의 데이터를 Spring Security 가 사용할 수 있는 형식으로 변환
+            return new CustomUserDetails(user.getId(), user.getUsername(), user.getPassword());
+        } catch (NumberFormatException e) {
+            throw new UsernameNotFoundException("유효하지 않은 사용자 ID: " + userId);
+        }
     }
 }

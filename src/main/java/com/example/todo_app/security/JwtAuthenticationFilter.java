@@ -28,34 +28,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String requestPath = request.getServletPath();
+        logger.debug("요청 경로: " + requestPath);
 
         // 인증이 필요 없는 경로를 필터링
         if (requestPath.startsWith("/users/") &&
             (requestPath.endsWith("login") || requestPath.endsWith("register"))) {
+            logger.debug("인증이 필요 없는 경로입니다. 필터를 건너뜁니다.");
             chain.doFilter(request, response);
             return;
         }
 
-        // 토큰이 유효하면 사용자 정보 로드 및 인증 객체 설정
+        // 요청 헤더에서 토큰 추출
         String token = resolveToken(request);
+        logger.debug("추출된 토큰: " + token);
 
-        if (token != null) {
-            if (jwtProvider.validateToken(token)) {
-                logger.info("토큰이 유효합니다.");
-                // 토큰에서 사용자 ID 추출
+        if (token != null && jwtProvider.validateToken(token)) {
+            logger.info("토큰이 유효합니다.");
+            try {
+                // 토큰에서 사용자 ID 추출 및 UserDetails 로드
                 int userId = jwtProvider.getUserIdFromToken(token);
-                // 사용자 ID로 UserDetails 조회
                 UserDetails userDetails = userDetailsService.loadUserByUsername(String.valueOf(userId));
+                logger.debug("로드된 사용자 정보: " + userDetails);
 
-                if (userDetails != null) {
-                    // 인증 객체 생성 및 SecurityContext 에 설정
-                    var authentication = jwtProvider.getAuthentication (token, userDetails);
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-            } else {
-                logger.warn("Authorization 헤더가 없거나 토큰 형식이 잘못되었습니다.");
+                // Authentication 객체 설정
+                var authentication = jwtProvider.getAuthentication(userDetails);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            } catch (Exception e) {
+                logger.error("사용자 인증에 실패했습니다.", e);
             }
+        } else {
+            logger.warn("Authorization 헤더가 없거나 토큰 형식이 잘못되었습니다.");
         }
+
         // 다음 필터로 요청 전달
         chain.doFilter(request, response);
     }

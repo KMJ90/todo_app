@@ -58,8 +58,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/h2-console/**").permitAll() // 이 경로는 인증 없이 접근 가능
                 .requestMatchers("/users/register", "/users/login", "/todos/categories").permitAll() // 이 경로는 인증 없이 접근 가능
+                .requestMatchers("/users/me").authenticated() // 인증 필요
                 .anyRequest().authenticated() // 그 외 요청은 인증 필요
             )
+
             // JWT 인증 필터 추가
             .addFilterBefore(jwtAuthenticationFilter(),
                 UsernamePasswordAuthenticationFilter.class) // 필터 등록

@@ -42,22 +42,26 @@ public class CustomUserDetails implements UserDetails {
         return password;
     }
 
-    // 계정 상태 정보는 간단히 true 로 처리
+    // 계정 상태 정보
+    // 계정 만료 여부를 반환. 기본적으로 true (만료되지 않음).
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
+    // 계정 잠금 여부를 반환. 기본적으로 true (잠기지 않음).
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
 
+    // 자격 증명(비밀번호) 만료 여부를 반환. 기본적으로 true (만료되지 않음).
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
+    // 계정 활성화 여부를 반환. 기본적으로 true (활성화 상태).
     @Override
     public boolean isEnabled() {
         return true;
