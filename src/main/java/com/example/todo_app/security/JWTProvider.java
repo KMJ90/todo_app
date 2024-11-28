@@ -32,20 +32,32 @@ public class JWTProvider {
 
     @PostConstruct
     public void init() {
-        // Base64 디코딩된 byte[]를 Key 로 변환
-        signingKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(SECRET_KEY));
+        try {
+            if (SECRET_KEY == null || SECRET_KEY.isBlank()) {
+                throw new IllegalArgumentException("SECRET_KEY 값이 설정되지 않았습니다.");
+            }
+            // Base64 디코딩된 Secret Key 를 Key 객체로 변환
+            signingKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(SECRET_KEY));
+            logger.info("JWTProvider 초기화 완료: SECRET_KEY 가 설정되었습니다.");
+        } catch (IllegalArgumentException e) {
+            logger.error("SECRET_KEY 가 유효하지 않은 Base64 문자열입니다.", e);
+            throw e; // 애플리케이션 초기화 실패
+        }
     }
 
     // JWT 토큰 생성
     public String generateToken(int userId) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + VALIDITY_IN_MILLISECONDS);
+        logger.info("Generating token for user ID: {}", userId);
+        logger.info("Token validity: {}", validity);
 
         return Jwts.builder()
-                .setSubject(String.valueOf(userId)) // 사용자 ID를 토큰에 포함
+                .setSubject("auth-token")
+                .claim("userId", userId) // 사용자 ID를 클레임으로 저장
                 .setIssuedAt(now)  // 토큰 생성 시간
                 .setExpiration(validity)  // 토큰 만료 시간 (1시간 유효)
-                .signWith(signingKey, SignatureAlgorithm.HS256)  // Key 객체 사용
+                .signWith(signingKey, SignatureAlgorithm.HS256)  // 서명
                 .compact();
     }
 
@@ -64,21 +76,30 @@ public class JWTProvider {
         } catch (Exception e) {
             logger.error("JWT 토큰 처리 중 알 수 없는 오류", e);
         }
-        return false;
+        return false;  // 유효하지 않은 토큰
     }
 
-    // JWT 토큰에서 사용자 ID 추출
+    // 사용자 ID를 클레임에서 직접 추출하며, Integer 타입으로 반환
     public int getUserIdFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(signingKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return Integer.parseInt(claims.getSubject());
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(signingKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.get("userId", Integer.class);  // 사용자 ID를 클레임에서 직접 가져오기
+        } catch (Exception e) {
+            logger.error("JWT 토큰에서 사용자 ID 를 추출하는 중 오류가 발생했습니다.", e);
+            throw new RuntimeException("토큰에서 사용자 ID 를 추출할 수 없습니다.");
+        }
     }
 
     // getAuthentication 메서드
-    public Authentication getAuthentication(String token, UserDetails userDetails) {
-        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+    public Authentication getAuthentication(UserDetails userDetails) {
+        return new UsernamePasswordAuthenticationToken(
+                userDetails, // 사용자 정보
+                null,  // 인증 정보 (비밀번호 등, 필요 업으므로 null)
+                userDetails.getAuthorities()  // 사용자 권한 목록
+        );
     }
 }

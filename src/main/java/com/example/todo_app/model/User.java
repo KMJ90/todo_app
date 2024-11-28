@@ -21,13 +21,8 @@ public class User {
     @JsonIgnore
     private String password;  // 비밀번호
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Todo> todos = new ArrayList<>();  // 사용자의 할 일 목록
-
-    // RefreshToken 필드
-    // orphanRemoval = true 로 설정되어 있어, 사용자 삭제 시 관련 토큰도 함께 삭제되므로, 보안 측면에서 유용한 설정
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RefreshToken> refreshTokens = new ArrayList<>();  // 사용자의 리프레시 토큰 목록
 
     public User() {}
 
@@ -69,14 +64,6 @@ public class User {
         this.todos = todos;
     }
 
-    public List<RefreshToken> getRefreshTokens() {
-        return refreshTokens;
-    }
-
-    public void setRefreshTokens(List<RefreshToken> refreshTokens) {
-        this.refreshTokens = refreshTokens;
-    }
-
     @Override
     public String toString() {
         return "User{" +
@@ -84,7 +71,6 @@ public class User {
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
                 ", todos=" + todos +
-                ", refreshTokens=" + refreshTokens +
                 '}';
     }
 }

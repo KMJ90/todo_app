@@ -5,10 +5,13 @@ import com.example.todo_app.dto.UserDTO;
 import com.example.todo_app.model.User;
 import com.example.todo_app.repository.UserRepository;
 import com.example.todo_app.security.JWTProvider;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -76,17 +79,18 @@ public class UserService {
     }
 
     // 현재 로그인한 사용자 정보 조회
+    @Transactional
     public UserDTO getCurrentUser() {
         // SecurityContext 이용해 현재 로그인된 사용자 정보 가져오기
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+        if (authentication == null || !authentication.isAuthenticated()) {
             logger.warn("현재 사용자 정보 조회 실패: 인증되지 않은 사용자");
-            throw new IllegalArgumentException("인증되지 않은 사용자입니다.");
+            throw new InsufficientAuthenticationException("인증되지 않은 사용자입니다.");
         }
 
         String username = authentication.getName(); // 현재 로그인한 사용자의 username
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByUsernameWithTodos(username)
                 .orElseThrow(() -> new IllegalStateException("현재 사용자를 찾을 수 없습니다."));
         return convertToDTO(user); // User 엔티티를 DTO 로 변환하여 반환
     }
@@ -95,18 +99,21 @@ public class UserService {
     public UserDTO convertToDTO(User user) {
         List<TodoDTO> todoDTOs = user.getTodos()
                 .stream()
-                .map(todo -> new TodoDTO(
-                        todo.getId(),
-                        todo.getTitle(),
-                        todo.getCompleted(),
-                        todo.getDueDate(),
-                        todo.getPriority(),
-                        todo.getPosition(),
-                        todo.getTags(),
-                        todo.getCreatedAt(),
-                        todo.getUpdatedAt(),
-                        todo.getUser() != null ? todo.getUser().getId() : null // NPE 방지
-                ))
+                .map(todo -> {
+                    Integer userId = (todo.getUser() != null) ? todo.getUser().getId() : null; // NPE 방지
+                    return new TodoDTO(
+                            todo.getId(),
+                            todo.getTitle(),
+                            todo.getCompleted(),
+                            todo.getDueDate(),
+                            todo.getPriority(),
+                            todo.getPosition(),
+                            todo.getTags(),
+                            todo.getCreatedAt(),
+                            todo.getUpdatedAt(),
+                            userId
+                    );
+                })
                 .collect(Collectors.toList());
         return new UserDTO(user.getId(), user.getUsername(), todoDTOs);
     }
