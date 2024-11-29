@@ -35,7 +35,7 @@ public class UserService {
         this.jwtProvider = jwtProvider;
     }
 
-    // 회원가입 메서드 - 사용자 이름 중복 검사 및 비밀번호 암호화 후 저장
+    // 회원가입 메서드 -> 사용자 이름 중복 검사 및 비밀번호 암호화 후 저장
     public void registerUser(String username, String password) {
         // 사용자 이름이 이미 존재하는지 확인
         if (userRepository.findByUsername(username).isPresent()) {
@@ -50,7 +50,7 @@ public class UserService {
         logger.info("회원가입 성공: 사용자 {}", username);
     }
 
-    // 로그인 메서드 - 사용자 이름과 비밀번호 검증 후 DTO 반환
+    // 로그인 메서드 -> 사용자 이름과 비밀번호 검증 후 DTO 반환
     public Optional<String> loginUser(String username, String password) {
         // 사용자 이름으로 DB 에서 User 객체 찾기
         Optional<User> userOptional = userRepository.findByUsername(username);
